@@ -12,7 +12,6 @@ let tailLength = 2;
 const snakeParts = [];
 const speed = 7; // Define a velocidade aqui
 let score = 0; // Inicialize a pontuação
-let gameOverSquare = { x: -1, y: -1 }; // Inicialize com valores que não são válidos
 let isGameRunning = true;
 
 function clearScreen() {
@@ -43,8 +42,6 @@ function isGameOver() {
     let part = snakeParts[i];
     if (part.x === headX && part.y === headY) {
       gameOver = true; // Game over se a cobra colidir com ela mesma
-      gameOverSquare.x = headX; // Armazene as coordenadas do quadrado onde ocorreu a colisão
-      gameOverSquare.y = headY;
       break;
     }
   }
@@ -73,11 +70,7 @@ function checkCollision() {
 function drawSnake() {
   for (let i = 0; i < snakeParts.length; i++) {
     const part = snakeParts[i];
-    if (gameOverSquare.x === part.x && gameOverSquare.y === part.y) {
-      ctx.fillStyle = 'orange'; // Defina a cor laranja para o quadrado da colisão
-    } else {
-      ctx.fillStyle = 'green'; // Use a cor verde para os outros quadrados da cobra
-    }
+    ctx.fillStyle = 'green'; // Use a cor verde para os quadrados da cobra
     ctx.fillRect(part.x * tileCount, part.y * tileCount, tileSize, tileSize);
   }
 }
@@ -150,7 +143,6 @@ function restartGame() {
   tailLength = 2;
   snakeParts.length = 0;
   score = 0;
-  gameOverSquare = { x: -1, y: -1 };
   clearScreen();
   drawGame();
 }
