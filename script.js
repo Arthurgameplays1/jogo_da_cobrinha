@@ -1,132 +1,122 @@
-const canvas = document.getElementById('game');
+const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const tileCount = 20;
-const tileSize = 18;
-let headX = 10;
-let headY = 10;
-let xVelocity = 0;
-let yVelocity = 0;
-let appleX = 5;
-let appleY = 5;
-let tailLength = 2;
-const snakeParts = [];
-const speed = 7; // Define the speed here
-let score = 0; // Initialize the score
+const tileSize = 20;
+const gridSize = canvas.width / tileSize;
+const snake = [{ x: 5, y: 5 }];
+const apple = { x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize) };
+let dx = 0;
+let dy = 0;
+let gameOver = false;
 
-function clearScreen() {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-function drawGame() {
-  changeSnakePosition();
-  clearScreen();
-  drawSnake();
-  checkCollision();
-  drawApple();
-  drawScore();
-  setTimeout(drawGame, 1000 / speed);
-}
-
-function checkCollision() {
-  if (appleX === headX && appleY === headY) {
-    appleX = Math.floor(Math.random() * tileCount);
-    appleY = Math.floor(Math.random() * tileCount);
-    tailLength++;
-    score++;
-  }
-
-  if (headX < 0 || headY < 0 || headX >= tileCount || headY >= tileCount) {
-    // Game over logic
-    location.reload(); // Reload the page when game over occurs
-    return;
-  }
-
-  for (let i = 0; i < snakeParts.length; i++) {
-    const part = snakeParts[i];
-    if (part.x === headX && part.y === headY) {
-      // Game over logic
-      location.reload(); // Reload the page when game over occurs
-      return;
-    }
-  }
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 function drawSnake() {
-  ctx.fillStyle = 'green';
-  for (let i = 0; i < snakeParts.length; i++) {
-    const part = snakeParts[i];
-    ctx.fillRect(part.x * tileCount, part.y * tileCount, tileSize, tileSize);
-  }
-  snakeParts.push(new snakePart(headX, headY));
-  while (snakeParts.length > tailLength) {
-    snakeParts.shift(); // Remove the tail if it's too long
-  }
+    snake.forEach(segment => {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(segment.x * tileSize, segment.y * tileSize, tileSize, tileSize);
+    });
 }
 
 function drawApple() {
-  ctx.fillStyle = 'red';
-  ctx.fillRect(appleX * tileCount, appleY * tileCount, tileSize, tileSize);
+    ctx.fillStyle = 'red';
+    ctx.fillRect(apple.x * tileSize, apple.y * tileSize, tileSize, tileSize);
 }
 
-function changeSnakePosition() {
-  const newHeadX = headX + xVelocity;
-  const newHeadY = headY + yVelocity;
+function checkCollision() {
+    if (snake[0].x < 0 || snake[0].x >= gridSize || snake[0].y < 0 || snake[0].y >= gridSize) {
+        return true; // Game over if snake hits the wall
+    }
 
-  // Check for collision with walls (game over condition)
-  if (newHeadX < 0 || newHeadX >= tileCount || newHeadY < 0 || newHeadY >= tileCount) {
-    // Game over logic
-    location.reload(); // Reload the page when game over occurs
-    return;
-  }
+    for (let i = 1; i < snake.length; i++) {
+        if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
+            return true; // Game over if snake collides with itself
+        }
+    }
 
-  headX = newHeadX;
-  headY = newHeadY;
+    return false;
 }
 
-document.body.addEventListener('keydown', keyDown);
+function update() {
+    if (gameOver) return; // Não atualize o jogo se estiver no modo Game Over
 
-function keyDown(event) {
-  switch (event.keyCode) {
-    case 38: // Up arrow
-      if (yVelocity !== 1) {
-        yVelocity = -1;
-        xVelocity = 0;
-      }
-      break;
-    case 40: // Down arrow
-      if (yVelocity !== -1) {
-        yVelocity = 1;
-        xVelocity = 0;
-      }
-      break;
-    case 37: // Left arrow
-      if (xVelocity !== 1) {
-        yVelocity = 0;
-        xVelocity = -1;
-      }
-      break;
-    case 39: // Right arrow
-      if (xVelocity !== -1) {
-        yVelocity = 0;
-        xVelocity = 1;
-      }
-      break;
-  }
+    const newHead = { x: snake[0].x + dx, y: snake[0].y + dy };
+    snake.unshift(newHead);
+
+    if (newHead.x === apple.x && newHead.y === apple.y) {
+        // Snake ate the apple, generate a new apple
+        apple.x = Math.floor(Math.random() * gridSize);
+        apple.y = Math.floor(Math.random() * gridSize);
+    } else {
+        // Remove the tail segment if the snake didn't eat the apple
+        snake.pop();
+    }
+
+    if (checkCollision()) {
+        gameOver = true;
+    }
 }
 
-// Class for snake parts
-class snakePart {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-  }
+function restartGame() {
+    snake.length = 1; // Reset the snake to a single segment
+    snake[0] = { x: 5, y: 5 }; // Reset the snake's position
+    apple.x = Math.floor(Math.random() * gridSize); // Reset the apple's position
+    apple.y = Math.floor(Math.random() * gridSize);
+    dx = 0; // Reset the direction
+    dy = 0;
+    gameOver = false;
 }
 
-function drawScore() {
-  ctx.fillStyle = 'white';
-  ctx.font = '10px Verdana';
-  ctx.fillText('Score: ' + score, canvas.clientWidth - 50, 10);
+function gameLoop() {
+    clearCanvas();
+    drawSnake();
+    drawApple();
+    update();
+
+    if (gameOver) {
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.fillText('Game Over', canvas.width / 2 - 70, canvas.height / 2);
+        ctx.font = '20px Arial';
+        ctx.fillText('Pressione a barra de espaço para reiniciar', canvas.width / 2 - 150, canvas.height / 2 + 30);
+    } else {
+        requestAnimationFrame(gameLoop); // Continue the game loop
+    }
 }
 
-drawGame();
+document.addEventListener('keydown', (event) => {
+    if (gameOver && event.key === ' ') {
+        restartGame();
+        gameLoop(); // Start the game loop again
+    } else if (!gameOver) {
+        switch (event.key) {
+            case 'ArrowUp':
+                if (dy !== 1) {
+                    dx = 0;
+                    dy = -1;
+                }
+                break;
+            case 'ArrowDown':
+                if (dy !== -1) {
+                    dx = 0;
+                    dy = 1;
+                }
+                break;
+            case 'ArrowLeft':
+                if (dx !== 1) {
+                    dx = -1;
+                    dy = 0;
+                }
+                break;
+            case 'ArrowRight':
+                if (dx !== -1) {
+                    dx = 1;
+                    dy = 0;
+                }
+                break;
+        }
+    }
+});
+
+gameLoop();
